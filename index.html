@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Solar 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, #0a0e27 0%, #000000 100%);
+            font-family: 'Arial', sans-serif;
+        }
+
+        #canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 90vw;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                padding: 15px;
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+
+            .controls h2 {
+                font-size: 16px;
+            }
+
+            .control-item {
+                font-size: 12px;
+            }
+
+            input[type="range"] {
+                width: 100%;
+                max-width: 200px;
+            }
+
+            button {
+                padding: 8px 15px;
+                font-size: 12px;
+                width: 48%;
+                margin: 2px 1%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .controls {
+                padding: 10px;
+            }
+
+            .controls h2 {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+
+            .control-item {
+                margin: 8px 0;
+            }
+
+            button {
+                width: 100%;
+                margin: 3px 0;
+            }
+        }
+
+        .controls h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #ffd700;
+        }
+
+        .control-item {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .control-item label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="range"] {
+            width: 200px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .info {
+                left: 10px;
+                right: 10px;
+                bottom: 10px;
+                max-width: calc(100vw - 20px);
+                padding: 12px;
+            }
+
+            .info h3 {
+                font-size: 16px;
+            }
+
+            .info p {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .info {
+                padding: 10px;
+            }
+
+            .info h3 {
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+
+            .info p {
+                font-size: 12px;
+            }
+        }
+
+        .info h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-20px) translateX(10px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    <canvas id="canvas"></canvas>
+    
+    <div class="controls">
+        <h2>⚙️ Controles</h2>
+        <div class="control-item">
+            <label>Velocidad: <span id="speedValue">1x</span></label>
+            <input type="range" id="speed" min="0" max="5" step="0.1" value="1">
+        </div>
+        <div class="control-item">
+            <label>Zoom: <span id="zoomValue">1x</span></label>
+            <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1">
+        </div>
+        <div class="control-item">
+            <button id="toggleOrbits">Ocultar Órbitas</button>
+            <button id="toggleRotation">Pausar</button>
+        </div>
+    </div>
+
+    <div class="info" id="info">
+        <h3 id="planetName"></h3>
+        <p id="planetDescription"></p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Crear estrellas de fondo
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 200; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            const size = Math.random() * 2;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // Galaxias y nebulosas
+        const galaxies = [
+            { x: 100, y: 100, size: 80, color: 'rgba(138, 43, 226, 0.3)', rotation: 0 },
+            { x: canvas.width - 150, y: 150, size: 100, color: 'rgba(255, 20, 147, 0.25)', rotation: 45 },
+            { x: 150, y: canvas.height - 150, size: 70, color: 'rgba(0, 191, 255, 0.3)', rotation: 90 },
+            { x: canvas.width - 100, y: canvas.height - 120, size: 90, color: 'rgba(75, 0, 130, 0.28)', rotation: 135 }
+        ];
+
+        // Nebulosas
+        const nebulas = [
+            { x: canvas.width / 4, y: canvas.height / 4, size: 150, colors: ['rgba(255, 0, 255, 0.15)', 'rgba(0, 255, 255, 0.15)'] },
+            { x: 3 * canvas.width / 4, y: 3 * canvas.height / 4, size: 120, colors: ['rgba(255, 100, 0, 0.12)', 'rgba(255, 0, 100, 0.12)'] }
+        ];
+
+        // Cinturón de asteroides
+        const asteroids = [];
+        for (let i = 0; i < 80; i++) {
+            asteroids.push({
+                distance: 175 + Math.random() * 30,
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.003 + Math.random() * 0.003,
+                size: 1 + Math.random() * 2,
+                color: '#808080'
+            });
+        }
+
+        // Cometas orbitales originales
+        const orbitalComets = [
+            { distance: 450, angle: 0, speed: 0.015, size: 3, color: '#b0e0e6' },
+            { distance: 480, angle: Math.PI, speed: 0.012, size: 2.5, color: '#87ceeb' }
+        ];
+
+        // Cometas que cruzan aleatoriamente
+        const passingComets = [];
+        
+        function createPassingComet() {
+            const side = Math.floor(Math.random() * 4); // 0: arriba, 1: derecha, 2: abajo, 3: izquierda
+            let startX, startY, endX, endY;
+            
+            switch(side) {
+                case 0: // desde arriba
+                    startX = Math.random() * canvas.width;
+                    startY = -50;
+                    endX = Math.random() * canvas.width;
+                    endY = canvas.height + 50;
+                    break;
+                case 1: // desde derecha
+                    startX = canvas.width + 50;
+                    startY = Math.random() * canvas.height;
+                    endX = -50;
+                    endY = Math.random() * canvas.height;
+                    break;
+                case 2: // desde abajo
+                    startX = Math.random() * canvas.width;
+                    startY = canvas.height + 50;
+                    endX = Math.random() * canvas.width;
+                    endY = -50;
+                    break;
+                case 3: // desde izquierda
+                    startX = -50;
+                    startY = Math.random() * canvas.height;
+                    endX = canvas.width + 50;
+                    endY = Math.random() * canvas.height;
+                    break;
+            }
+            
+            return {
+                x: startX,
+                y: startY,
+                startX: startX,
+                startY: startY,
+                endX: endX,
+                endY: endY,
+                progress: 0,
+                speed: 0.003 + Math.random() * 0.005,
+                size: 2 + Math.random() * 2,
+                color: ['#b0e0e6', '#87ceeb', '#add8e6', '#e0ffff'][Math.floor(Math.random() * 4)],
+                tailLength: 60 + Math.random() * 80,
+                brightness: 0.6 + Math.random() * 0.4
+            };
+        }
+        
+        // Función para generar cometas periódicamente
+        function maybeSpawnComet() {
+            if (Math.random() < 0.002 && passingComets.length < 3) { // 0.2% de probabilidad por frame
+                passingComets.push(createPassingComet());
+            }
+        }
+
+        let speedMultiplier = 1;
+        let zoomLevel = 1;
+        let showOrbits = true;
+        let isRotating = true;
+        let rotation = 0;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        const planetInfo = {
+            sol: { name: "Sol", desc: "Estrella central de nuestro sistema solar. Temperatura: 5,500°C" },
+            mercurio: { name: "Mercurio", desc: "El planeta más cercano al Sol. Sin atmósfera significativa." },
+            venus: { name: "Venus", desc: "El planeta más caliente. Atmósfera densa de CO₂." },
+            tierra: { name: "Tierra", desc: "Nuestro hogar. El único planeta conocido con vida." },
+            marte: { name: "Marte", desc: "El planeta rojo. Tiene dos pequeñas lunas." },
+            jupiter: { name: "Júpiter", desc: "El gigante gaseoso. El planeta más grande del sistema solar." },
+            saturno: { name: "Saturno", desc: "Famoso por sus espectaculares anillos." },
+            urano: { name: "Urano", desc: "Gigante de hielo que rota de lado." },
+            neptuno: { name: "Neptuno", desc: "El planeta más lejano. Vientos de 2,000 km/h." }
+        };
+
+        const planets = [
+            { name: 'mercurio', size: 4, distance: 60, speed: 0.04, color: '#8c7853', angle: 0 },
+            { name: 'venus', size: 9, distance: 90, speed: 0.015, color: '#ffc649', angle: 0 },
+            { name: 'tierra', size: 10, distance: 120, speed: 0.01, color: '#4a90e2', angle: 0 },
+            { name: 'marte', size: 6, distance: 150, speed: 0.008, color: '#e27b58', angle: 0 },
+            { name: 'jupiter', size: 25, distance: 220, speed: 0.002, color: '#c88b3a', angle: 0 },
+            { name: 'saturno', size: 22, distance: 290, speed: 0.0009, color: '#fad5a5', angle: 0, hasRings: true },
+            { name: 'urano', size: 15, distance: 350, speed: 0.0004, color: '#4fd0e7', angle: 0 },
+            { name: 'neptuno', size: 14, distance: 400, speed: 0.0001, color: '#4166f5', angle: 0 }
+        ];
+
+        function drawSun() {
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 35);
+            gradient.addColorStop(0, '#ffff00');
+            gradient.addColorStop(0.4, '#ffaa00');
+            gradient.addColorStop(1, '#ff6600');
+            
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = '#ffaa00';
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawGalaxy(galaxy) {
+            ctx.save();
+            ctx.translate(galaxy.x, galaxy.y);
+            ctx.rotate((galaxy.rotation * Math.PI / 180) + rotation * 0.1);
+            
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, galaxy.size);
+            gradient.addColorStop(0, galaxy.color.replace('0.3', '0.5'));
+            gradient.addColorStop(0.3, galaxy.color);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, galaxy.size, galaxy.size * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Brazos espirales
+            ctx.strokeStyle = galaxy.color.replace('0.3', '0.4');
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                for (let angle = 0; angle < Math.PI * 2; angle += 0.1) {
+                    const r = galaxy.size * 0.3 + angle * 5;
+                    const x = r * Math.cos(angle + i * Math.PI * 2 / 3);
+                    const y = r * Math.sin(angle + i * Math.PI * 2 / 3) * 0.6;
+                    if (angle === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+
+        function drawNebula(nebula) {
+            ctx.save();
+            
+            const gradient = ctx.createRadialGradient(nebula.x, nebula.y, 0, nebula.x, nebula.y, nebula.size);
+            gradient.addColorStop(0, nebula.colors[0]);
+            gradient.addColorStop(0.5, nebula.colors[1]);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.globalCompositeOperation = 'screen';
+            ctx.beginPath();
+            ctx.arc(nebula.x, nebula.y, nebula.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.restore();
+        }
+
+        function drawAsteroid(asteroid) {
+            const x = centerX + Math.cos(asteroid.angle) * asteroid.distance * zoomLevel;
+            const y = centerY + Math.sin(asteroid.angle) * asteroid.distance * zoomLevel;
+            
+            ctx.fillStyle = asteroid.color;
+            ctx.beginPath();
+            ctx.arc(x, y, asteroid.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawComet(comet) {
+            const x = centerX + Math.cos(comet.angle) * comet.distance * zoomLevel;
+            const y = centerY + Math.sin(comet.angle) * comet.distance * zoomLevel;
+            
+            // Núcleo del cometa
+            ctx.fillStyle = comet.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = comet.color;
+            ctx.beginPath();
+            ctx.arc(x, y, comet.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Cola del cometa
+            const gradient = ctx.createLinearGradient(x, y, 
+                x - Math.cos(comet.angle) * 40, y - Math.sin(comet.angle) * 40);
+            gradient.addColorStop(0, comet.color.replace(')', ', 0.8)').replace('rgb', 'rgba'));
+            gradient.addColorStop(1, 'rgba(176, 224, 230, 0)');
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - Math.cos(comet.angle) * 40, y - Math.sin(comet.angle) * 40);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+        }
+
+        function drawPassingComet(comet) {
+            const dx = comet.endX - comet.startX;
+            const dy = comet.endY - comet.startY;
+            const angle = Math.atan2(dy, dx);
+            
+            // Núcleo brillante
+            const gradient = ctx.createRadialGradient(comet.x, comet.y, 0, comet.x, comet.y, comet.size * 3);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.3, comet.color);
+            gradient.addColorStop(1, 'rgba(176, 224, 230, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.shadowBlur = 20 * comet.brightness;
+            ctx.shadowColor = comet.color;
+            ctx.beginPath();
+            ctx.arc(comet.x, comet.y, comet.size * 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Núcleo sólido
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(comet.x, comet.y, comet.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Cola principal (más ancha)
+            const tailGradient = ctx.createLinearGradient(
+                comet.x, comet.y,
+                comet.x - Math.cos(angle) * comet.tailLength,
+                comet.y - Math.sin(angle) * comet.tailLength
+            );
+            tailGradient.addColorStop(0, comet.color.replace(')', ', ' + (comet.brightness * 0.9) + ')').replace('rgb', 'rgba'));
+            tailGradient.addColorStop(0.5, comet.color.replace(')', ', ' + (comet.brightness * 0.4) + ')').replace('rgb', 'rgba'));
+            tailGradient.addColorStop(1, 'rgba(176, 224, 230, 0)');
+            
+            ctx.strokeStyle = tailGradient;
+            ctx.lineWidth = comet.size * 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(comet.x, comet.y);
+            ctx.lineTo(
+                comet.x - Math.cos(angle) * comet.tailLength,
+                comet.y - Math.sin(angle) * comet.tailLength
+            );
+            ctx.stroke();
+            
+            // Cola secundaria (más fina y larga)
+            const tailGradient2 = ctx.createLinearGradient(
+                comet.x, comet.y,
+                comet.x - Math.cos(angle) * comet.tailLength * 1.5,
+                comet.y - Math.sin(angle) * comet.tailLength * 1.5
+            );
+            tailGradient2.addColorStop(0, comet.color.replace(')', ', ' + (comet.brightness * 0.6) + ')').replace('rgb', 'rgba'));
+            tailGradient2.addColorStop(1, 'rgba(135, 206, 235, 0)');
+            
+            ctx.strokeStyle = tailGradient2;
+            ctx.lineWidth = comet.size * 1.5;
+            ctx.beginPath();
+            ctx.moveTo(comet.x, comet.y);
+            ctx.lineTo(
+                comet.x - Math.cos(angle) * comet.tailLength * 1.5,
+                comet.y - Math.sin(angle) * comet.tailLength * 1.5
+            );
+            ctx.stroke();
+            
+            // Partículas en la cola
+            for (let i = 0; i < 8; i++) {
+                const particleProgress = i / 8;
+                const px = comet.x - Math.cos(angle) * comet.tailLength * particleProgress;
+                const py = comet.y - Math.sin(angle) * comet.tailLength * particleProgress;
+                const particleSize = (1 - particleProgress) * comet.size * 0.5;
+                
+                ctx.fillStyle = comet.color.replace(')', ', ' + (comet.brightness * (1 - particleProgress)) + ')').replace('rgb', 'rgba');
+                ctx.beginPath();
+                ctx.arc(px + (Math.random() - 0.5) * 5, py + (Math.random() - 0.5) * 5, particleSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+
+        function drawOrbit(distance) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, distance * zoomLevel, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function drawPlanet(planet) {
+            const x = centerX + Math.cos(planet.angle) * planet.distance * zoomLevel;
+            const y = centerY + Math.sin(planet.angle) * planet.distance * zoomLevel;
+            
+            // Sombra del planeta
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = planet.color;
+            
+            // Planeta
+            const gradient = ctx.createRadialGradient(x - planet.size/3, y - planet.size/3, 0, x, y, planet.size);
+            gradient.addColorStop(0, planet.color);
+            gradient.addColorStop(1, shadeColor(planet.color, -40));
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, planet.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Anillos de Saturno
+            if (planet.hasRings) {
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = 'rgba(200, 180, 140, 0.6)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.ellipse(x, y, planet.size * 1.8, planet.size * 0.5, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.strokeStyle = 'rgba(180, 160, 120, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(x, y, planet.size * 2.2, planet.size * 0.6, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+
+        function shadeColor(color, percent) {
+            const num = parseInt(color.replace("#",""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 +
+                (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255))
+                .toString(16).slice(1);
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 14, 39, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar galaxias de fondo
+            galaxies.forEach(galaxy => drawGalaxy(galaxy));
+            
+            // Dibujar nebulosas
+            nebulas.forEach(nebula => drawNebula(nebula));
+            
+            drawSun();
+            
+            // Dibujar cinturón de asteroides
+            asteroids.forEach(asteroid => {
+                if (isRotating) {
+                    asteroid.angle += asteroid.speed * speedMultiplier;
+                }
+                drawAsteroid(asteroid);
+            });
+            
+            planets.forEach(planet => {
+                if (showOrbits) {
+                    drawOrbit(planet.distance);
+                }
+                
+                if (isRotating) {
+                    planet.angle += planet.speed * speedMultiplier;
+                }
+                
+                drawPlanet(planet);
+            });
+            
+            // Dibujar cometas orbitales
+            orbitalComets.forEach(comet => {
+                if (isRotating) {
+                    comet.angle += comet.speed * speedMultiplier;
+                }
+                drawComet(comet);
+            });
+            
+            // Generar y actualizar cometas que pasan
+            if (isRotating) {
+                maybeSpawnComet();
+            }
+            
+            // Actualizar y dibujar cometas que pasan
+            for (let i = passingComets.length - 1; i >= 0; i--) {
+                const comet = passingComets[i];
+                
+                if (isRotating) {
+                    comet.progress += comet.speed * speedMultiplier;
+                }
+                
+                // Interpolar posición
+                comet.x = comet.startX + (comet.endX - comet.startX) * comet.progress;
+                comet.y = comet.startY + (comet.endY - comet.startY) * comet.progress;
+                
+                // Eliminar si completó su trayectoria
+                if (comet.progress >= 1) {
+                    passingComets.splice(i, 1);
+                    continue;
+                }
+                
+                drawPassingComet(comet);
+            }
+            
+            if (isRotating) {
+                rotation += 0.001;
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Controles
+        document.getElementById('speed').addEventListener('input', (e) => {
+            speedMultiplier = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = speedMultiplier.toFixed(1) + 'x';
+        });
+
+        document.getElementById('zoom').addEventListener('input', (e) => {
+            zoomLevel = parseFloat(e.target.value);
+            document.getElementById('zoomValue').textContent = zoomLevel.toFixed(1) + 'x';
+        });
+
+        document.getElementById('toggleOrbits').addEventListener('click', (e) => {
+            showOrbits = !showOrbits;
+            e.target.textContent = showOrbits ? 'Ocultar Órbitas' : 'Mostrar Órbitas';
+        });
+
+        document.getElementById('toggleRotation').addEventListener('click', (e) => {
+            isRotating = !isRotating;
+            e.target.textContent = isRotating ? 'Pausar' : 'Reanudar';
+        });
+
+        // Hover sobre planetas
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            let hoveredPlanet = null;
+            
+            // Check sol
+            const distToSun = Math.sqrt(Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2));
+            if (distToSun < 30) {
+                hoveredPlanet = 'sol';
+            }
+            
+            // Check planets
+            planets.forEach(planet => {
+                const x = centerX + Math.cos(planet.angle) * planet.distance * zoomLevel;
+                const y = centerY + Math.sin(planet.angle) * planet.distance * zoomLevel;
+                const dist = Math.sqrt(Math.pow(mouseX - x, 2) + Math.pow(mouseY - y, 2));
+                
+                if (dist < planet.size + 5) {
+                    hoveredPlanet = planet.name;
+                }
+            });
+            
+            const infoDiv = document.getElementById('info');
+            if (hoveredPlanet) {
+                const info = planetInfo[hoveredPlanet];
+                document.getElementById('planetName').textContent = info.name;
+                document.getElementById('planetDescription').textContent = info.desc;
+                infoDiv.style.display = 'block';
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Ajustar zoom automáticamente para pantallas pequeñas
+            if (window.innerWidth < 768) {
+                const baseZoom = window.innerWidth / 768;
+                zoomLevel = Math.max(0.4, baseZoom);
+                document.getElementById('zoom').value = zoomLevel;
+                document.getElementById('zoomValue').textContent = zoomLevel.toFixed(1) + 'x';
+            }
+        });
+
+        // Ajuste inicial para pantallas pequeñas
+        if (window.innerWidth < 768) {
+            const baseZoom = window.innerWidth / 768;
+            zoomLevel = Math.max(0.4, baseZoom);
+            document.getElementById('zoom').value = zoomLevel;
+            document.getElementById('zoomValue').textContent = zoomLevel.toFixed(1) + 'x';
+        }
+
+        // Soporte táctil para móviles
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = touch.clientX - rect.left;
+            const mouseY = touch.clientY - rect.top;
+            
+            let hoveredPlanet = null;
+            
+            const distToSun = Math.sqrt(Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2));
+            if (distToSun < 30) {
+                hoveredPlanet = 'sol';
+            }
+            
+            planets.forEach(planet => {
+                const x = centerX + Math.cos(planet.angle) * planet.distance * zoomLevel;
+                const y = centerY + Math.sin(planet.angle) * planet.distance * zoomLevel;
+                const dist = Math.sqrt(Math.pow(mouseX - x, 2) + Math.pow(mouseY - y, 2));
+                
+                if (dist < planet.size + 10) {
+                    hoveredPlanet = planet.name;
+                }
+            });
+            
+            const infoDiv = document.getElementById('info');
+            if (hoveredPlanet) {
+                const info = planetInfo[hoveredPlanet];
+                document.getElementById('planetName').textContent = info.name;
+                document.getElementById('planetDescription').textContent = info.desc;
+                infoDiv.style.display = 'block';
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => {
+            setTimeout(() => {
+                document.getElementById('info').style.display = 'none';
+            }, 2000);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
