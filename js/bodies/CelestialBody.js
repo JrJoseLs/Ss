@@ -36,9 +36,12 @@ export class CelestialBody {
      * @param {string} p.color   color de la etiqueta y de la órbita
      * @param {object} p.info    textos del panel de información
      * @param {number} p.radius  radio en unidades de escena
-     * @param {'star'|'planet'|'moon'|'comet'} p.kind
+     * @param {'star'|'planet'|'dwarf'|'moon'|'comet'} p.kind
      */
     constructor({ id, name, color = '#ffffff', info, radius, kind }) {
+        if (new.target === CelestialBody) {
+            throw new TypeError('CelestialBody es abstracta: instancia Sun, Planet, Moon o Comet.');
+        }
         this.id = id;
         this.name = name;
         this.color = color;

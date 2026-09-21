@@ -21,7 +21,7 @@ export class SolarSystem {
         scene.add(this.sun.root);
 
         this.planets = PLANETS_DATA.map((data) => {
-            const planet = data.isEarth ? new Earth(data, assets) : new Planet(data, assets);
+            const planet = (data.isEarth ? Earth : Planet).create(data, assets);
             planet.createLabel(onSelect, planet.radius < 1 ? 'label--small' : '');
             scene.add(planet.root);
             this.orbitLines.add(planet.orbitLine);
@@ -61,6 +61,13 @@ export class SolarSystem {
         this.pickables = this.bodies.flatMap((body) => body.pickables);
         this.occluders = [...this.planets, ...this.moons];
         this.tmp = new THREE.Vector3();
+
+        // Orden de prioridad de las etiquetas cuando se solapan: Sol, planetas
+        // de mayor a menor, planetas enanos, cometa y, por último, lunas.
+        const rank = { star: 0, planet: 1, dwarf: 2, comet: 3, moon: 4 };
+        this.labelOrder = [...this.bodies].sort((a, b) => rank[a.kind] - rank[b.kind] || b.radius - a.radius);
+        this.labelRects = [];
+        this.ndc = new THREE.Vector3();
     }
 
     find(id) {
@@ -84,10 +91,18 @@ export class SolarSystem {
         this.moons.forEach((moon) => { moon.orbitLine.visible = visible; });
     }
 
-    /** Oculta las etiquetas que estorban: la del astro que tenemos delante y las lunas lejanas. */
-    updateLabels(camera, showLabels) {
+    /**
+     * Decide qué etiquetas se muestran: oculta la del astro que tenemos
+     * delante, las de lunas de planetas lejanos y, cuando dos se solapan en
+     * pantalla, la de menor prioridad (la del astro seleccionado nunca).
+     */
+    updateLabels(camera, showLabels, selected, width, height, compact = false) {
         const cam = camera.position;
-        for (const body of this.bodies) {
+        const placed = this.labelRects;
+        placed.length = 0;
+        const order = selected ? [selected, ...this.labelOrder.filter((b) => b !== selected)] : this.labelOrder;
+
+        for (const body of order) {
             let visible = showLabels;
             if (visible) {
                 const distance = body.getWorldPosition(this.tmp).distanceTo(cam);
@@ -95,9 +110,31 @@ export class SolarSystem {
                 if (body.kind === 'moon') {
                     const parentDistance = body.planet.getWorldPosition(this.tmp).distanceTo(cam);
                     visible = visible && parentDistance < body.planet.radius * 40;
+                    // En pantallas pequeñas, solo las lunas del planeta que se está viendo.
+                    if (compact) visible = visible && (selected === body || selected === body.planet || selected?.planet === body.planet);
                 }
             }
+            if (visible) visible = this.reserveLabelSpace(body, camera, width, height, placed);
             body.setLabelVisible(visible);
         }
+    }
+
+    /** Reserva el rectángulo de la etiqueta en pantalla; false si choca con otra ya colocada. */
+    reserveLabelSpace(body, camera, width, height, placed) {
+        const element = body.label.element;
+        body.label.getWorldPosition(this.ndc).project(camera);
+        if (this.ndc.z > 1) return true; // detrás de la cámara: CSS2DRenderer ya la oculta
+        // El tamaño se mide una vez (medirlo en cada fotograma forzaría un reflow).
+        if (!body.labelSize) {
+            if (!element.offsetWidth) return true;
+            body.labelSize = [element.offsetWidth, element.offsetHeight];
+        }
+        const [w, h] = body.labelSize;
+        const x = (this.ndc.x + 1) * 0.5 * width;
+        const y = (1 - this.ndc.y) * 0.5 * height;
+        const rect = [x - w / 2 - 2, y - h - 2, x + w / 2 + 2, y + 2];
+        const overlaps = placed.some((r) => rect[0] < r[2] && rect[2] > r[0] && rect[1] < r[3] && rect[3] > r[1]);
+        if (!overlaps) placed.push(rect);
+        return !overlaps;
     }
 }

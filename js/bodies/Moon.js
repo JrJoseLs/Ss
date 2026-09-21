@@ -3,6 +3,12 @@ import { CelestialBody, stepAngle, TAU, DEG } from './CelestialBody.js';
 import { Planet } from './Planet.js';
 import { kmToSceneRadius } from '../config.js';
 import { PlanetMaterial } from '../materials/PlanetMaterials.js';
+import { SatelliteOrbit } from '../core/SatelliteOrbit.js';
+import { moonEclipticPosition } from '../core/LunarEphemeris.js';
+import { eclipticDirection } from '../core/Frames.js';
+import { SATELLITE_STATES, SATELLITE_EPOCH } from '../data/satelliteStates.js';
+
+const X_AXIS = new THREE.Vector3(1, 0, 0);
 
 const PHASES = [
     [10, 'Luna nueva'], [80, 'Creciente'], [100, 'Cuarto creciente'], [170, 'Gibosa creciente'],
@@ -10,11 +16,13 @@ const PHASES = [
 ];
 
 /**
- * Satélite natural. Orbita en el plano ecuatorial de su planeta (o en el de
- * la eclíptica, como la Luna) y está acoplado por marea: siempre muestra la
- * misma cara al planeta.
+ * Satélite natural acoplado por marea: siempre muestra la misma cara al planeta.
  *
- *   plane (inclinación orbital) → pivot (ángulo orbital) → root (a la distancia orbital)
+ * - La Luna sigue su efeméride (LunarEphemeris), así que su fase y su
+ *   posición corresponden a la fecha simulada.
+ * - Las demás lunas usan un vector de estado real (SatelliteOrbit), del que
+ *   salen su plano orbital, su sentido de giro y su fase:
+ *     plane (plano orbital real) → pivot (ángulo orbital) → root (a la distancia orbital)
  */
 export class Moon extends CelestialBody {
     constructor(id, data, planet, assets) {
@@ -31,14 +39,21 @@ export class Moon extends CelestialBody {
         this.distance = planet.radius * data.distance;
         this.angle = 0;
 
-        this.plane = new THREE.Group();
-        this.plane.rotation.x = (data.inclination ?? 0) * DEG;
-        (data.plane === 'ecliptic' ? planet.root : planet.tiltGroup).add(this.plane);
+        this.rate = TAU / data.periodDays; // rad/día
+        this.usesEphemeris = data.ephemeris === 'lunar';
 
-        this.pivot = new THREE.Group();
-        this.plane.add(this.pivot);
-        this.pivot.add(this.root);
-        this.root.position.set(this.distance, 0, 0);
+        if (this.usesEphemeris) {
+            planet.root.add(this.root);
+        } else {
+            this.orbit = new SatelliteOrbit(SATELLITE_STATES[id], SATELLITE_EPOCH, data.periodDays);
+            this.plane = new THREE.Group();
+            this.plane.quaternion.copy(this.orbit.quaternion);
+            planet.root.add(this.plane);
+            this.pivot = new THREE.Group();
+            this.plane.add(this.pivot);
+            this.pivot.add(this.root);
+            this.root.position.set(this.distance, 0, 0);
+        }
 
         const geometry = data.irregular
             ? Moon.createIrregularGeometry(this.radius)
@@ -58,15 +73,32 @@ export class Moon extends CelestialBody {
 
         if (atm) Planet.createAtmosphere(this.radius, atm, this.root);
 
-        const circle = [];
-        for (let k = 0; k < 128; k++) {
-            const a = (k / 128) * TAU;
-            circle.push(new THREE.Vector3(Math.cos(a) * this.distance, 0, -Math.sin(a) * this.distance));
+        if (this.usesEphemeris) {
+            // La órbita de la Luna cambia de un mes a otro: se dibuja su trayectoria real.
+            this.orbitLine = CelestialBody.createOrbitLine(this.samplePath(0), '#9fb0c8', { opacity: 0.14 });
+            this.pathDays = 0;
+            planet.root.add(this.orbitLine);
+        } else {
+            const circle = [];
+            for (let k = 0; k < 128; k++) {
+                const a = (k / 128) * TAU;
+                circle.push(new THREE.Vector3(Math.cos(a) * this.distance, 0, -Math.sin(a) * this.distance));
+            }
+            this.orbitLine = CelestialBody.createOrbitLine(circle, '#9fb0c8', { opacity: 0.14 });
+            this.plane.add(this.orbitLine);
         }
-        this.orbitLine = CelestialBody.createOrbitLine(circle, '#9fb0c8', { opacity: 0.14 });
-        this.plane.add(this.orbitLine);
 
         planet.addSatellite(this);
+    }
+
+    /** Trayectoria de la Luna durante un mes sidéreo a partir de `days`. */
+    samplePath(days) {
+        const points = [];
+        for (let k = 0; k < 128; k++) {
+            const { lon, lat } = moonEclipticPosition(days + (k / 128) * this.data.periodDays);
+            points.push(eclipticDirection(lon, lat).multiplyScalar(this.distance));
+        }
+        return points;
     }
 
     /** Esfera deformada con ruido de baja frecuencia: forma de patata para Fobos y Deimos. */
@@ -96,10 +128,29 @@ export class Moon extends CelestialBody {
     }
 
     update(ctx) {
-        const rate = TAU / this.data.periodDays;
-        const exact = (this.data.longitudeAtEpoch ?? 0) * DEG + rate * ctx.days;
-        this.angle = stepAngle(this.angle, exact, rate * ctx.deltaDays, 0.05);
-        this.pivot.rotation.y = this.angle;
+        const delta = this.rate * ctx.deltaDays;
+        if (!this.usesEphemeris) {
+            this.angle = stepAngle(this.angle, this.orbit.angleAt(ctx.days), delta, 0.05);
+            this.pivot.rotation.y = this.angle;
+            return;
+        }
+
+        // Longitud suavizada (para que no parpadee con el tiempo muy acelerado) y latitud real.
+        const { lon, lat } = moonEclipticPosition(ctx.days);
+        this.angle = stepAngle(this.angle, lon * DEG, delta, 0.05);
+        const dir = eclipticDirection(this.angle / DEG, lat, this.tmpDir ??= new THREE.Vector3());
+        this.root.position.copy(dir).multiplyScalar(this.distance);
+        // El eje X local apunta hacia fuera, así que la cara visible (−X) mira a la Tierra.
+        this.root.quaternion.setFromUnitVectors(X_AXIS, dir);
+
+        if (Math.abs(ctx.days - this.pathDays) > 3) {
+            this.pathDays = ctx.days;
+            // Se reescribe el mismo buffer (setFromPoints crearía uno nuevo cada vez).
+            const attribute = this.orbitLine.geometry.attributes.position;
+            this.samplePath(ctx.days - this.data.periodDays / 2).forEach((p, k) => attribute.setXYZ(k, p.x, p.y, p.z));
+            attribute.needsUpdate = true;
+            this.orbitLine.geometry.computeBoundingSphere();
+        }
     }
 
     getLiveStats() {

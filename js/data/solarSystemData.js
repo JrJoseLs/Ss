@@ -3,6 +3,12 @@
  *
  * Elementos orbitales: aproximación de E. M. Standish (JPL) para la época
  * J2000.0, válida entre los años 1800 y 2050.
+ * Polos (`pole`): ascensión recta y declinación del polo norte en J2000,
+ * según la IAU. Para los planetas es el polo situado al norte del plano
+ * invariable, y una rotación negativa indica giro retrógrado (Venus, Urano).
+ * Para Plutón, como planeta enano, es el polo positivo de la regla de la mano
+ * derecha, así que su rotación es positiva y su inclinación supera los 90°.
+ * `rates`: variación de los elementos por siglo juliano (Standish).
  *   a     semieje mayor (UA)          e      excentricidad
  *   i     inclinación (°)             L      longitud media (°)
  *   varpi longitud del perihelio (°)  Omega  longitud del nodo ascendente (°)
@@ -13,6 +19,7 @@ export const SUN_DATA = {
     name: 'Sol',
     color: '#ffb347',
     rotationPeriodDays: 25.38,
+    pole: [286.13, 63.87],
     info: {
         type: 'Estrella · enana amarilla G2V',
         description: 'Una esfera de plasma a 15 millones de grados en su núcleo, donde cada segundo fusiona 600 millones de toneladas de hidrógeno en helio. Contiene el 99.86 % de toda la masa del sistema solar.',
@@ -38,9 +45,11 @@ export const PLANETS_DATA = [
         bump: 1.4,
         minnaert: 0.8,
         elements: { a: 0.38709927, e: 0.20563593, i: 7.00497902, L: 252.25032350, varpi: 77.45779628, Omega: 48.33076593 },
+        rates: { a: 0.00000037, e: 0.00001906, i: -0.00594749, L: 149472.67411175, varpi: 0.16047689, Omega: -0.12534081 },
         periodDays: 87.969,
         rotationHours: 1407.6,
         tilt: 0.03,
+        pole: [281.0103, 61.4155],
         info: {
             type: 'Planeta rocoso',
             description: 'El planeta más pequeño y el más cercano al Sol. Sin atmósfera que retenga el calor, pasa de 430 °C de día a −180 °C de noche.',
@@ -66,9 +75,11 @@ export const PLANETS_DATA = [
         bump: 0,
         minnaert: 1.05,
         elements: { a: 0.72333566, e: 0.00677672, i: 3.39467605, L: 181.97909950, varpi: 131.60246718, Omega: 76.67984255 },
+        rates: { a: 0.00000390, e: -0.00004107, i: -0.00078890, L: 58517.81538729, varpi: 0.00268329, Omega: -0.27769418 },
         periodDays: 224.701,
         rotationHours: -5832.5,
         tilt: 177.4,
+        pole: [272.76, 67.16],
         atmosphere: { color: [1.0, 0.82, 0.5], scale: 1.05, intensity: 1.4 },
         info: {
             type: 'Planeta rocoso',
@@ -94,9 +105,11 @@ export const PLANETS_DATA = [
         texture: 'earth_day_4k.webp',
         isEarth: true,
         elements: { a: 1.00000261, e: 0.01671123, i: -0.00001531, L: 100.46457166, varpi: 102.93768193, Omega: 0.0 },
+        rates: { a: 0.00000562, e: -0.00004392, i: -0.01294668, L: 35999.37244981, varpi: 0.32327364, Omega: 0.0 },
         periodDays: 365.256,
         rotationHours: 23.9345,
         tilt: 23.44,
+        pole: [0, 90],
         atmosphere: { color: [0.32, 0.6, 1.0], scale: 1.04, intensity: 1.6 },
         moons: ['luna'],
         info: {
@@ -124,9 +137,11 @@ export const PLANETS_DATA = [
         bump: 1.0,
         minnaert: 0.9,
         elements: { a: 1.52371034, e: 0.09339410, i: 1.84969142, L: -4.55343205, varpi: -23.94362959, Omega: 49.55953891 },
+        rates: { a: 0.00001847, e: 0.00007882, i: -0.00813131, L: 19140.30268499, varpi: 0.44441088, Omega: -0.29257343 },
         periodDays: 686.98,
         rotationHours: 24.6229,
         tilt: 25.19,
+        pole: [317.68143, 52.8865],
         atmosphere: { color: [1.0, 0.62, 0.42], scale: 1.025, intensity: 0.7 },
         moons: ['fobos', 'deimos'],
         info: {
@@ -154,9 +169,11 @@ export const PLANETS_DATA = [
         bump: 0,
         minnaert: 1.15,
         elements: { a: 5.20288700, e: 0.04838624, i: 1.30439695, L: 34.39644051, varpi: 14.72847983, Omega: 100.47390909 },
+        rates: { a: -0.00011607, e: -0.00013253, i: -0.00183714, L: 3034.74612775, varpi: 0.21252668, Omega: 0.20469106 },
         periodDays: 4332.59,
         rotationHours: 9.925,
         tilt: 3.13,
+        pole: [268.056595, 64.495303],
         atmosphere: { color: [0.95, 0.82, 0.62], scale: 1.018, intensity: 0.3 },
         moons: ['io', 'europa', 'ganimedes', 'calisto'],
         info: {
@@ -184,9 +201,11 @@ export const PLANETS_DATA = [
         bump: 0,
         minnaert: 1.15,
         elements: { a: 9.53667594, e: 0.05386179, i: 2.48599187, L: 49.95424423, varpi: 92.59887831, Omega: 113.66242448 },
+        rates: { a: -0.00125060, e: -0.00050991, i: 0.00193609, L: 1222.49362201, varpi: -0.41897216, Omega: -0.28867794 },
         periodDays: 10759.22,
         rotationHours: 10.656,
         tilt: 26.73,
+        pole: [40.589, 83.537],
         atmosphere: { color: [0.98, 0.86, 0.62], scale: 1.018, intensity: 0.28 },
         rings: { inner: 1.24, outer: 2.32, opacity: 1.0, tint: [1.0, 0.96, 0.9], brightness: 3.0 },
         moons: ['titan'],
@@ -215,9 +234,11 @@ export const PLANETS_DATA = [
         bump: 0,
         minnaert: 1.1,
         elements: { a: 19.18916464, e: 0.04725744, i: 0.77263783, L: 313.23810451, varpi: 170.95427630, Omega: 74.01692503 },
+        rates: { a: -0.00196176, e: -0.00004397, i: -0.00242939, L: 428.48202785, varpi: 0.40805281, Omega: 0.04240589 },
         periodDays: 30688.5,
         rotationHours: -17.24,
         tilt: 97.77,
+        pole: [257.311, -15.175],
         atmosphere: { color: [0.55, 0.88, 0.98], scale: 1.03, intensity: 0.9 },
         rings: { inner: 1.64, outer: 2.02, opacity: 0.35, tint: [0.7, 0.75, 0.8], brightness: 1.2 },
         info: {
@@ -245,9 +266,11 @@ export const PLANETS_DATA = [
         bump: 0,
         minnaert: 1.1,
         elements: { a: 30.06992276, e: 0.00859048, i: 1.77004347, L: -55.12002969, varpi: 44.96476227, Omega: 131.78422574 },
+        rates: { a: 0.00026291, e: 0.00005105, i: 0.00035372, L: 218.45945325, varpi: -0.32241464, Omega: -0.00508664 },
         periodDays: 60182,
         rotationHours: 16.11,
         tilt: 28.32,
+        pole: [299.36, 43.46],
         atmosphere: { color: [0.35, 0.55, 1.0], scale: 1.03, intensity: 1.0 },
         moons: ['triton'],
         info: {
@@ -266,11 +289,45 @@ export const PLANETS_DATA = [
             fact: 'Tiene los vientos más rápidos medidos en el sistema solar: superan los 2 000 km/h.',
         },
     },
+    {
+        id: 'pluton',
+        name: 'Plutón',
+        color: '#d8b89c',
+        radiusKm: 1188.3,
+        texture: 'pluto.webp',
+        dwarf: true,
+        bump: 0.6,
+        minnaert: 0.9,
+        elements: { a: 39.48211675, e: 0.24882730, i: 17.14001206, L: 238.92903833, varpi: 224.06891629, Omega: 110.30393684 },
+        rates: { a: -0.00031596, e: 0.00005170, i: 0.00004818, L: 145.20780515, varpi: -0.04062942, Omega: -0.01183482 },
+        periodDays: 90560,
+        rotationHours: 153.2928,
+        tilt: 119.51,
+        pole: [132.993, -6.163],
+        atmosphere: { color: [0.55, 0.72, 1.0], scale: 1.03, intensity: 0.35 },
+        moons: ['caronte'],
+        info: {
+            type: 'Planeta enano',
+            description: 'Reclasificado como planeta enano en 2006. La sonda New Horizons lo visitó en 2015 y encontró montañas de hielo de agua, glaciares de nitrógeno y un gran «corazón» helado, la llanura Sputnik. Su hemisferio sur nunca se ha fotografiado.',
+            stats: {
+                'Diámetro': '2 377 km',
+                'Masa': '0.0022 Tierras',
+                'Gravedad': '0.62 m/s²',
+                'Temperatura': '−229 °C',
+                'Año': '248 años',
+                'Día sidéreo': '6.39 días',
+                'Inclinación axial': '119.5°',
+                'Lunas': '5',
+            },
+            fact: 'Plutón y Caronte están acoplados por marea el uno al otro: desde un hemisferio de Plutón, Caronte permanece inmóvil en el cielo, y desde el otro nunca se ve.',
+        },
+    },
 ];
 
 /**
  * Lunas. `distance` está en radios del planeta (escala de escena, comprimida).
- * Un periodo negativo indica órbita retrógrada.
+ * El plano orbital y la posición inicial salen de vectores de estado reales
+ * (satelliteStates.js); la Luna usa su propia efeméride (LunarEphemeris.js).
  */
 export const MOONS_DATA = {
     luna: {
@@ -278,9 +335,7 @@ export const MOONS_DATA = {
         radiusKm: 1737.4,
         distance: 2.9,
         periodDays: 27.321661,
-        longitudeAtEpoch: 218.316,
-        plane: 'ecliptic',
-        inclination: 5.14,
+        ephemeris: 'lunar',
         texture: 'moon.webp',
         bump: 1.6,
         minnaert: 0.7,
@@ -298,8 +353,6 @@ export const MOONS_DATA = {
         irregular: true,
         distance: 1.75,
         periodDays: 0.31891,
-        longitudeAtEpoch: 35,
-        inclination: 1.1,
         texture: 'moon.webp',
         tint: [0.62, 0.55, 0.5],
         bump: 2,
@@ -317,8 +370,6 @@ export const MOONS_DATA = {
         irregular: true,
         distance: 2.6,
         periodDays: 1.263,
-        longitudeAtEpoch: 190,
-        inclination: 0.9,
         texture: 'moon.webp',
         tint: [0.72, 0.66, 0.6],
         bump: 2,
@@ -334,7 +385,6 @@ export const MOONS_DATA = {
         radiusKm: 1821.6,
         distance: 1.5,
         periodDays: 1.769,
-        longitudeAtEpoch: 106,
         texture: 'moon.webp',
         tint: [1.25, 1.05, 0.45],
         bump: 0.6,
@@ -350,7 +400,6 @@ export const MOONS_DATA = {
         radiusKm: 1560.8,
         distance: 1.85,
         periodDays: 3.551,
-        longitudeAtEpoch: 176,
         texture: 'moon.webp',
         tint: [1.3, 1.18, 1.0],
         bump: 0.3,
@@ -366,7 +415,6 @@ export const MOONS_DATA = {
         radiusKm: 2634.1,
         distance: 2.35,
         periodDays: 7.155,
-        longitudeAtEpoch: 121,
         texture: 'moon.webp',
         tint: [0.95, 0.9, 0.82],
         bump: 1,
@@ -382,7 +430,6 @@ export const MOONS_DATA = {
         radiusKm: 2410.3,
         distance: 3.05,
         periodDays: 16.689,
-        longitudeAtEpoch: 84,
         texture: 'moon.webp',
         tint: [0.62, 0.58, 0.54],
         bump: 1.5,
@@ -398,7 +445,6 @@ export const MOONS_DATA = {
         radiusKm: 2574.7,
         distance: 3.5,
         periodDays: 15.945,
-        longitudeAtEpoch: 20,
         texture: 'moon.webp',
         tint: [1.2, 0.85, 0.45],
         bump: 0,
@@ -414,9 +460,7 @@ export const MOONS_DATA = {
         name: 'Tritón',
         radiusKm: 1353.4,
         distance: 1.95,
-        periodDays: -5.877,
-        longitudeAtEpoch: 250,
-        inclination: 23,
+        periodDays: 5.877,
         texture: 'moon.webp',
         tint: [1.2, 1.08, 1.05],
         bump: 0.6,
@@ -425,6 +469,21 @@ export const MOONS_DATA = {
             description: 'Un mundo helado de nitrógeno con géiseres activos. Orbita al revés del giro de Neptuno: casi seguro fue capturado del cinturón de Kuiper.',
             stats: { 'Diámetro': '2 707 km', 'Distancia': '354 759 km', 'Periodo': '5.88 días (retrógrado)' },
             fact: 'Con −235 °C, es uno de los objetos más fríos medidos en el sistema solar.',
+        },
+    },
+    caronte: {
+        name: 'Caronte',
+        radiusKm: 606,
+        distance: 3.6,
+        periodDays: 6.387221,
+        texture: 'charon.webp',
+        tint: [1.08, 1.0, 0.96],
+        bump: 0.8,
+        info: {
+            type: 'Satélite de Plutón',
+            description: 'La luna más grande en proporción a su planeta: mide la mitad que Plutón. Su casquete polar rojizo, Mordor Macula, se tiñe con gas que escapa de Plutón y se congela allí.',
+            stats: { 'Diámetro': '1 212 km', 'Distancia': '19 591 km', 'Periodo': '6.39 días' },
+            fact: 'El centro de masas del sistema queda fuera de Plutón, en el espacio entre ambos: son casi un planeta doble.',
         },
     },
 };

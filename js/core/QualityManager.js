@@ -44,11 +44,15 @@ export class QualityManager {
         return this.mode === 'auto' ? `Auto · ${level}` : level;
     }
 
+    /** Fija el modo (auto, alta, media o baja) sin aplicarlo todavía. */
+    setMode(mode) {
+        this.mode = MODES.includes(mode) ? mode : 'auto';
+        this.level = this.mode === 'auto' ? (this.software ? 'baja' : 'alta') : this.mode;
+    }
+
     /** Recorre auto → alta → media → baja → auto. */
     cycleMode() {
-        this.mode = MODES[(MODES.indexOf(this.mode) + 1) % MODES.length];
-        if (this.mode === 'auto') this.level = this.software ? 'baja' : 'alta';
-        else this.level = this.mode;
+        this.setMode(MODES[(MODES.indexOf(this.mode) + 1) % MODES.length]);
         this.apply();
     }
 

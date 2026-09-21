@@ -76,6 +76,13 @@ export class SimulationClock {
         this.emit();
     }
 
+    /** Salta a una fecha concreta (ms desde 1970). */
+    setDate(ms) {
+        if (!Number.isFinite(ms)) return;
+        this.timeMs = ms;
+        this.emit();
+    }
+
     onChange(listener) {
         this.listeners.add(listener);
     }

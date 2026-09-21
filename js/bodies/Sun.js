@@ -3,6 +3,7 @@ import { CelestialBody, stepAngle, TAU } from './CelestialBody.js';
 import { SUN_DATA } from '../data/solarSystemData.js';
 import { SCALE } from '../config.js';
 import { standardVertex, noise3D } from '../shaders/chunks.js';
+import { poleDirection, poleQuaternion } from '../core/Frames.js';
 
 /** Superficie solar: textura real deformada por turbulencia, granulación y oscurecimiento del limbo. */
 class SunSurfaceMaterial extends THREE.ShaderMaterial {
@@ -116,7 +117,11 @@ export class Sun extends CelestialBody {
             new THREE.SphereGeometry(this.radius, 128, 64),
             new SunSurfaceMaterial(assets.texture('sun.webp')),
         );
-        this.root.add(this.surface);
+        // El ecuador solar está inclinado 7.25° respecto a la eclíptica.
+        this.axis = new THREE.Group();
+        poleQuaternion(poleDirection(...SUN_DATA.pole), this.axis.quaternion);
+        this.axis.add(this.surface);
+        this.root.add(this.axis);
         this.makePickable(this.surface);
 
         const extent = 5;

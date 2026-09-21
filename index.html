@@ -41,39 +41,59 @@
         <header class="topbar">
             <div class="brand">
                 <h1>Sistema Solar</h1>
-                <p id="simDate" class="brand__date">—</p>
+                <button id="simDate" class="brand__date" title="Viajar a otra fecha (D)" aria-haspopup="dialog" aria-expanded="false">—</button>
             </div>
-            <nav class="toolbar" aria-label="Opciones de visualización">
-                <button class="tool active" data-toggle="orbits" title="Órbitas (O)">
+            <nav id="toolbar" class="toolbar" aria-label="Opciones de visualización">
+                <button class="tool tool--primary active" data-toggle="orbits" title="Mostrar u ocultar las trayectorias (O)" aria-pressed="true">
                     <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="4.5"/><circle cx="12" cy="12" r="2.2" class="fill"/></svg>
-                    <span>Órbitas</span>
+                    <span>Trayectorias</span>
                 </button>
-                <button class="tool active" data-toggle="labels" title="Etiquetas (L)">
-                    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"/></svg>
-                    <span>Etiquetas</span>
+                <div id="toolbarMore" class="toolbar__more">
+                    <button class="tool active" data-toggle="labels" title="Nombres de los astros (L)" aria-pressed="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"/></svg>
+                        <span>Etiquetas</span>
+                    </button>
+                    <button class="tool active" data-toggle="bloom" title="Resplandor y destellos (B)" aria-pressed="true">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+                        <span>Resplandor</span>
+                    </button>
+                    <button class="tool" data-action="quality" title="Calidad gráfica (Q)">
+                        <svg viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M5 15l4-5 3 3 4-6 3 4"/></svg>
+                        <span id="qualityLabel">Auto · Alta</span>
+                    </button>
+                    <button class="tool" data-action="overview" title="Vista general (Esc)">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+                        <span>Vista general</span>
+                    </button>
+                    <button class="tool" data-action="fullscreen" title="Pantalla completa (F)">
+                        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                        <span>Pantalla completa</span>
+                    </button>
+                    <button class="tool" data-action="help" title="Ayuda (H)">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><circle cx="12" cy="17.2" r=".6" class="fill"/></svg>
+                        <span>Ayuda</span>
+                    </button>
+                </div>
+                <button class="tool tool--primary" data-action="immersive" title="Ocultar la interfaz (I)">
+                    <svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>
+                    <span>Ocultar</span>
                 </button>
-                <button class="tool active" data-toggle="bloom" title="Resplandor (B)">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
-                    <span>Resplandor</span>
-                </button>
-                <button class="tool" data-action="quality" title="Calidad gráfica (Q)">
-                    <svg viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M5 15l4-5 3 3 4-6 3 4"/></svg>
-                    <span id="qualityLabel">Auto · Alta</span>
-                </button>
-                <button class="tool" data-action="overview" title="Vista general (Esc)">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
-                    <span>Vista general</span>
-                </button>
-                <button class="tool" data-action="fullscreen" title="Pantalla completa (F)">
-                    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-                    <span>Pantalla</span>
-                </button>
-                <button class="tool" data-action="help" title="Ayuda (H)">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><circle cx="12" cy="17.2" r=".6" class="fill"/></svg>
-                    <span>Ayuda</span>
+                <button id="menuButton" class="tool tool--menu" title="Más opciones" aria-label="Más opciones" aria-expanded="false" aria-controls="toolbarMore">
+                    <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" class="fill"/><circle cx="12" cy="12" r="1.6" class="fill"/><circle cx="19" cy="12" r="1.6" class="fill"/></svg>
                 </button>
             </nav>
         </header>
+
+        <section id="datePanel" class="datepanel" role="dialog" aria-label="Viajar en el tiempo" hidden>
+            <h2>Viajar en el tiempo</h2>
+            <form id="dateForm" class="datepanel__form">
+                <input id="dateInput" type="datetime-local" min="1800-01-01T00:00" max="2200-12-31T23:59" required>
+                <button type="submit">Ir</button>
+            </form>
+            <p class="datepanel__hint">Las posiciones son precisas entre 1800 y 2050.</p>
+            <h3>Eventos</h3>
+            <div id="eventList" class="datepanel__events"></div>
+        </section>
 
         <div id="gpuNotice" class="notice" role="alert" hidden>
             <p><b>Tu navegador no está usando la tarjeta gráfica.</b> Activa la <i>aceleración por hardware</i>
@@ -82,29 +102,38 @@
         </div>
 
         <aside id="infoPanel" class="info" aria-live="polite">
-            <button id="infoClose" class="info__close" title="Cerrar (Esc)" aria-label="Cerrar">×</button>
-            <p id="infoType" class="info__type"></p>
-            <h2 id="infoName" class="info__name"></h2>
-            <p id="infoDescription" class="info__description"></p>
-            <dl id="infoLive" class="info__live"></dl>
-            <dl id="infoStats" class="info__stats"></dl>
-            <div class="info__fact">
-                <h3>¿Sabías que…?</h3>
-                <p id="infoFact"></p>
+            <div class="info__header">
+                <button id="infoToggle" class="info__summary" aria-expanded="true" aria-controls="infoBody" title="Plegar o desplegar">
+                    <span class="info__grip" aria-hidden="true"></span>
+                    <span id="infoType" class="info__type"></span>
+                    <span id="infoName" class="info__name"></span>
+                    <span id="infoPeek" class="info__peek"></span>
+                    <svg class="info__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <button id="infoClose" class="info__close" title="Cerrar (Esc)" aria-label="Cerrar">×</button>
             </div>
-            <div id="infoMoons" class="info__moons"></div>
+            <div id="infoBody" class="info__body">
+                <p id="infoDescription" class="info__description"></p>
+                <dl id="infoLive" class="info__live"></dl>
+                <dl id="infoStats" class="info__stats"></dl>
+                <div class="info__fact">
+                    <h3>¿Sabías que…?</h3>
+                    <p id="infoFact"></p>
+                </div>
+                <div id="infoMoons" class="info__moons"></div>
+            </div>
         </aside>
 
         <footer class="bottom">
             <div class="timebar">
-                <button id="timeReverse" class="timebar__btn" title="Más lento / retroceder (,)">
+                <button id="timeReverse" class="timebar__btn" title="Más lento / retroceder (,)" aria-label="Más lento">
                     <svg viewBox="0 0 24 24"><path d="M11 6 4 12l7 6zM20 6l-7 6 7 6z" class="fill"/></svg>
                 </button>
-                <button id="timePlay" class="timebar__btn timebar__btn--main" title="Pausar / reanudar (Espacio)">
+                <button id="timePlay" class="timebar__btn timebar__btn--main" title="Pausar / reanudar (Espacio)" aria-label="Pausar o reanudar">
                     <svg id="iconPause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" class="fill"/></svg>
                     <svg id="iconPlay" viewBox="0 0 24 24" hidden><path d="M7 4.5v15l12.5-7.5z" class="fill"/></svg>
                 </button>
-                <button id="timeForward" class="timebar__btn" title="Más rápido (.)">
+                <button id="timeForward" class="timebar__btn" title="Más rápido (.)" aria-label="Más rápido">
                     <svg viewBox="0 0 24 24"><path d="M13 6l7 6-7 6zM4 6l7 6-7 6z" class="fill"/></svg>
                 </button>
                 <div class="timebar__readout">
@@ -118,6 +147,15 @@
 
         <p class="scale-note">Distancias y tamaños comprimidos para que todo sea visible · Posiciones calculadas con elementos orbitales reales</p>
     </div>
+
+    <!-- Modo sin interfaz: solo el modelo -->
+    <button id="showUi" class="show-ui" hidden title="Mostrar la interfaz (I)">
+        <svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Mostrar interfaz</span>
+    </button>
+
+    <p id="hint" class="hint" hidden></p>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <!-- Ayuda -->
     <div id="helpModal" class="modal" hidden>
@@ -138,10 +176,12 @@
                     <h3>Teclado</h3>
                     <ul>
                         <li><kbd>0</kbd>–<kbd>8</kbd> Sol y planetas</li>
-                        <li><kbd>9</kbd> Luna · <kbd>C</kbd> cometa</li>
+                        <li><kbd>9</kbd> Luna · <kbd>P</kbd> Plutón · <kbd>C</kbd> cometa</li>
+                        <li><kbd>D</kbd> viajar a una fecha o evento</li>
                         <li><kbd>Espacio</kbd> pausar el tiempo</li>
                         <li><kbd>,</kbd> <kbd>.</kbd> velocidad · <kbd>N</kbd> ahora</li>
-                        <li><kbd>O</kbd> órbitas · <kbd>L</kbd> etiquetas · <kbd>B</kbd> resplandor</li>
+                        <li><kbd>O</kbd> trayectorias · <kbd>L</kbd> etiquetas · <kbd>B</kbd> resplandor</li>
+                        <li><kbd>I</kbd> ocultar o mostrar la interfaz</li>
                         <li><kbd>Q</kbd> calidad gráfica · <kbd>F</kbd> pantalla completa</li>
                         <li><kbd>Esc</kbd> vista general</li>
                     </ul>
@@ -150,7 +190,8 @@
             <p class="modal__credits">
                 Texturas: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope</a>
                 (CC BY 4.0, basadas en datos de la NASA) y ejemplos de <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a>.
-                Elementos orbitales: JPL / NASA.
+                Plutón y Caronte: NASA / JHUAPL / SwRI (New Horizons, dominio público; su hemisferio sur, no fotografiado, está rellenado).
+                Elementos orbitales y efemérides: JPL / NASA.
             </p>
         </div>
     </div>

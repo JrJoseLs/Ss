@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { CelestialBody, stepAngle, TAU, DEG } from './CelestialBody.js';
+
+const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 import { OrbitalElements } from '../core/OrbitalElements.js';
+import { poleDirection, poleQuaternion } from '../core/Frames.js';
 import { kmToSceneRadius } from '../config.js';
 import { PlanetMaterial, EarthMaterial, CloudMaterial, AtmosphereMaterial, RingMaterial } from '../materials/PlanetMaterials.js';
 
@@ -12,29 +15,47 @@ const GM_SUN = 1.32712440018e11; // km³/s²
  *
  * Jerarquía de nodos:
  *   root        → posición orbital
- *   └ tiltGroup → inclinación del eje (el ecuador y los anillos viven aquí)
+ *   └ tiltGroup → orientación real del eje (el ecuador y los anillos viven aquí)
  *     ├ surface → gira sobre su eje
  *     ├ atmosphere
  *     └ rings
+ *
+ * Se crea con `Planet.create(data, assets)`: el constructor solo guarda el
+ * estado y `build()` crea las mallas. Así las subclases (como Earth) pueden
+ * sobrescribir los pasos de construcción cuando ya están inicializadas del
+ * todo (patrón Template Method), en lugar de llamar a métodos sobrescritos
+ * desde el constructor de la clase base.
  */
 export class Planet extends CelestialBody {
-    constructor(data, assets) {
+    /** Fábrica: construye el planeta (o la subclase) y crea sus mallas. */
+    static create(data, assets) {
+        const planet = new this(data);
+        planet.build(assets);
+        return planet;
+    }
+
+    constructor(data) {
         super({
             id: data.id,
             name: data.name,
             color: data.color,
             info: data.info,
             radius: kmToSceneRadius(data.radiusKm),
-            kind: 'planet',
+            kind: data.dwarf ? 'dwarf' : 'planet',
         });
         this.data = data;
-        this.orbit = new OrbitalElements(data.elements, data.periodDays);
+        this.orbit = new OrbitalElements(data.elements, data.periodDays, data.rates);
         this.positionAU = new THREE.Vector3();
         this.spin = 0;
+        this.pole = poleDirection(...data.pole);
+    }
 
-        // El polo norte se inclina hacia la longitud eclíptica 90°, como el de la Tierra.
+    /** Crea las mallas. Las subclases lo amplían llamando a super.build(). */
+    build(assets) {
+        const { data } = this;
+        // Eje de rotación orientado hacia el polo real publicado por la IAU.
         this.tiltGroup = new THREE.Group();
-        this.tiltGroup.rotation.x = -data.tilt * DEG;
+        poleQuaternion(this.pole, this.tiltGroup.quaternion);
         this.root.add(this.tiltGroup);
 
         const segments = data.isEarth ? 160 : 112;
@@ -48,8 +69,9 @@ export class Planet extends CelestialBody {
         if (data.atmosphere) this.atmosphere = Planet.createAtmosphere(this.radius, data.atmosphere, this.tiltGroup);
         if (data.rings) this.createRings(assets);
 
-        this.orbitLine = CelestialBody.createOrbitLine(this.orbit.samplePath(720), data.color);
-        this.ringNormal = new THREE.Vector3(0, 1, 0).applyQuaternion(this.tiltGroup.quaternion);
+        const today = (Date.now() - J2000_MS) / 86400000;
+        this.orbitLine = CelestialBody.createOrbitLine(this.orbit.samplePath(720, today), data.color);
+        this.ringNormal = this.pole.clone();
     }
 
     createSurfaceMaterial(assets) {
@@ -159,9 +181,13 @@ export class Planet extends CelestialBody {
 
 /** La Tierra: rotación sincronizada con el tiempo sidéreo real, luces nocturnas y nubes. */
 export class Earth extends Planet {
-    constructor(data, assets) {
-        super(data, assets);
+    constructor(data) {
+        super(data);
         this.cloudDrift = 0;
+    }
+
+    build(assets) {
+        super.build(assets);
         this.clouds = new THREE.Mesh(
             new THREE.SphereGeometry(this.radius * 1.012, 128, 96),
             new CloudMaterial({ map: this.cloudTexture }),

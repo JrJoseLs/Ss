@@ -17,6 +17,7 @@ export class CameraDirector {
         this.lastFocusPos = new THREE.Vector3();
         this.tmp = new THREE.Vector3();
         this.overviewPosition = new THREE.Vector3(-70, 290, 560);
+        this.durationScale = 1; // < 1 con «reducir movimiento» activado
     }
 
     get isFlying() {
@@ -48,7 +49,10 @@ export class CameraDirector {
 
     flyToOverview(duration = 3.5, from = null) {
         if (from) this.camera.position.copy(from);
-        this.start({ body: null, duration, endPosition: this.overviewPosition.clone(), minDistance: 5 });
+        // En vertical se aleja algo más para que quepan las órbitas exteriores.
+        const aspectFactor = Math.max(1, 0.75 / this.camera.aspect);
+        const endPosition = this.overviewPosition.clone().multiplyScalar(aspectFactor);
+        this.start({ body: null, duration, endPosition, minDistance: 5 });
     }
 
     start({ body, duration, offset = null, endPosition = null, minDistance }) {
@@ -56,7 +60,7 @@ export class CameraDirector {
         const endGuess = body ? body.getWorldPosition(new THREE.Vector3()).add(offset) : endPosition;
         this.flight = {
             body,
-            duration,
+            duration: duration * this.durationScale,
             t: 0,
             offset,
             endPosition,

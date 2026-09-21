@@ -56,6 +56,7 @@ export class App {
         this.selected = null;
         this.elapsed = 0;
         this.pixelRatio = Math.min(window.devicePixelRatio, 2);
+        this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         this.createRenderer();
         this.scene = new THREE.Scene();
@@ -83,6 +84,7 @@ export class App {
         this.scene.add(new THREE.AmbientLight(0xffffff, 0.05));
 
         this.director = new CameraDirector(this.camera, this.controls);
+        this.director.durationScale = this.reducedMotion ? 0.35 : 1;
         this.flare = new LensFlare();
         this.createPostprocessing();
         this.quality = new QualityManager(this);
@@ -190,6 +192,7 @@ export class App {
             if (moved < 6 && quick) {
                 const body = this.pick(e.clientX, e.clientY);
                 if (body) this.select(body);
+                else if (this.ui.immersive) this.ui.setImmersive(false); // tocar el vacío devuelve la interfaz
             }
         });
         el.addEventListener('pointermove', (e) => {
@@ -213,6 +216,15 @@ export class App {
         body.setSelected(true);
         this.director.flyTo(body);
         this.ui.showInfo(body);
+    }
+
+    /** Salta a una fecha (en pausa, para poder observarla) y enfoca un astro o la vista general. */
+    travelTo(ms, focusId) {
+        this.clock.setDate(ms);
+        if (!this.clock.paused) this.clock.togglePause();
+        const body = focusId && this.system.find(focusId);
+        if (body) this.select(body);
+        else this.overview();
     }
 
     overview() {
@@ -249,10 +261,15 @@ export class App {
         const h = window.innerHeight;
         let tx = 0;
         let ty = 0;
-        if (this.ui.current) {
+        if (this.ui.current && !this.ui.immersive) {
             const panel = this.ui.panel;
-            if (w > 760) tx = (panel.offsetWidth + 24) / 2;
-            else ty = (h - panel.offsetTop) / 2 - 30;
+            if (!this.ui.isCompact) {
+                // Ficha a la derecha: centra el astro en el espacio libre de la izquierda.
+                if (this.ui.infoOpenAndExpanded) tx = (panel.offsetWidth + 24) / 2;
+            } else {
+                // Hoja inferior: centra el astro en el espacio libre de encima.
+                ty = Math.max(0, (h - panel.offsetTop) / 2 - 24);
+            }
         }
         this.viewOffset.x = THREE.MathUtils.damp(this.viewOffset.x, tx, 3, dt);
         this.viewOffset.y = THREE.MathUtils.damp(this.viewOffset.y, ty, 3, dt);
@@ -282,7 +299,7 @@ export class App {
         this.director.update(dt);
         this.updateViewOffset(dt);
         this.starfield.update(this.camera, this.elapsed);
-        this.system.updateLabels(this.camera, this.options.labels);
+        this.system.updateLabels(this.camera, this.options.labels && !this.ui.immersive, this.selected, window.innerWidth, window.innerHeight, this.ui.isCompact);
         this.flare.update(this.camera, this.system.sun.radius, this.system.occluders, dt);
         this.cinematic.uniforms.uTime.value = this.elapsed;
         // Bloom adaptativo: si el Sol llena la pantalla, se suaviza para no deslumbrar.

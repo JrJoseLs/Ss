@@ -8,31 +8,49 @@ const JD_J2000 = 2451545.0;
 /**
  * Órbita kepleriana definida por sus seis elementos clásicos.
  * Calcula posiciones heliocéntricas reales (en UA) y su equivalente en la
- * escena. El plano de referencia es la eclíptica: X apunta al punto Aries y
- * el eje Y de three.js es el polo norte de la eclíptica.
+ * escena. El plano de referencia es la eclíptica J2000: X apunta al punto
+ * Aries y el eje Y de three.js es el polo norte de la eclíptica.
+ *
+ * Admite dos formas de fijar la posición en la órbita:
+ *  - longitud media `L` y longitud del perihelio `varpi` en J2000 (planetas),
+ *    opcionalmente con sus variaciones por siglo (`rates`, de Standish);
+ *  - argumento del perihelio `omega` y fecha de paso por el perihelio (cometas).
  */
 export class OrbitalElements {
     /**
      * @param {object} el  a, e, i, Omega y además (varpi y L) o (omega y perihelionJD)
      * @param {number} periodDays
+     * @param {object} [rates]  variación de a, e, i, L, varpi y Omega por siglo juliano
      */
-    constructor(el, periodDays) {
-        this.a = el.a;
-        this.e = el.e;
+    constructor(el, periodDays, rates = null) {
+        this.base = el;
+        this.rates = rates;
         this.periodDays = periodDays;
         this.n = TAU / periodDays; // movimiento medio (rad/día)
+        this.usesMeanLongitude = el.L !== undefined;
+        this.epochDay = this.usesMeanLongitude ? 0 : el.perihelionJD - JD_J2000;
+        this.appliedT = null;
+        this.applyCentury(0);
+    }
 
-        const i = el.i * DEG;
-        const Omega = el.Omega * DEG;
+    /** Recalcula los elementos para T siglos julianos desde J2000. */
+    applyCentury(T) {
+        if (T === this.appliedT) return;
+        this.appliedT = T;
+        const el = this.base;
+        const r = this.rates ?? {};
+        const at = (key) => el[key] + (r[key] ?? 0) * T;
+
+        this.a = at('a');
+        this.e = at('e');
+        const i = at('i') * DEG;
+        const Omega = at('Omega') * DEG;
         let omega;
-        if (el.L !== undefined) {
-            omega = (el.varpi - el.Omega) * DEG;
-            this.M0 = (el.L - el.varpi) * DEG;
-            this.epochDay = 0;
+        if (this.usesMeanLongitude) {
+            omega = (at('varpi') - at('Omega')) * DEG;
+            this.meanAnomalyAtT = (at('L') - at('varpi')) * DEG;
         } else {
             omega = el.omega * DEG;
-            this.M0 = 0;
-            this.epochDay = el.perihelionJD - JD_J2000;
         }
 
         // Matriz de rotación del plano orbital a la eclíptica.
@@ -57,6 +75,16 @@ export class OrbitalElements {
         return E;
     }
 
+    /** Anomalía media (rad) para una fecha (días desde J2000). */
+    meanAnomaly(days) {
+        if (!this.usesMeanLongitude) return this.n * (days - this.epochDay);
+        if (this.rates) {
+            this.applyCentury(days / 36525);
+            return this.meanAnomalyAtT;
+        }
+        return this.meanAnomalyAtT + this.n * days;
+    }
+
     /** Posición heliocéntrica en UA (coordenadas three.js) para una anomalía excéntrica. */
     positionFromE(E, target = new THREE.Vector3()) {
         const xp = this.a * (Math.cos(E) - this.e);
@@ -69,7 +97,7 @@ export class OrbitalElements {
 
     /** Posición heliocéntrica en UA para una fecha (días desde J2000). */
     positionAU(days, target = new THREE.Vector3()) {
-        const M = this.M0 + this.n * (days - this.epochDay);
+        const M = this.meanAnomaly(days);
         return this.positionFromE(OrbitalElements.eccentricAnomaly(M, this.e), target);
     }
 
@@ -80,8 +108,9 @@ export class OrbitalElements {
         return target.copy(vAU).multiplyScalar(auToScene(r) / r);
     }
 
-    /** Puntos de la órbita completa, ya en escala de escena. */
-    samplePath(segments = 360) {
+    /** Puntos de la órbita completa en la fecha dada, ya en escala de escena. */
+    samplePath(segments = 360, days = 0) {
+        if (this.rates) this.applyCentury(days / 36525);
         const points = [];
         const v = new THREE.Vector3();
         for (let k = 0; k <= segments; k++) {
