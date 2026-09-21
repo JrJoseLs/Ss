@@ -2,13 +2,12 @@ import { App } from './App.js';
 
 const loader = document.getElementById('loader');
 const progress = document.getElementById('loaderProgress');
-const status = document.getElementById('loaderStatus');
 const startButton = document.getElementById('startButton');
 const errorBox = document.getElementById('loaderError');
 const params = new URLSearchParams(location.search);
 
 function showError(message) {
-    status.hidden = true;
+    startButton.hidden = true;
     errorBox.hidden = false;
     errorBox.textContent = message;
 }
@@ -30,19 +29,18 @@ if (!supportsWebGL2()) {
 
         app.assets.track({
             onProgress: (ratio) => {
-                const pct = Math.round(ratio * 100);
-                progress.style.width = `${pct}%`;
-                status.textContent = `Cargando texturas… ${pct}%`;
+                // La compilación de shaders ocupa el último 10 % del anillo.
+                progress.style.strokeDashoffset = String(100 - ratio * 90);
             },
             onLoad: async (errors) => {
-                progress.style.width = '100%';
-                status.textContent = 'Preparando shaders…';
                 await app.prepare();
-                status.textContent = errors.length
-                    ? `Listo (no se pudieron cargar ${errors.length} texturas)`
-                    : 'Todo listo';
-                startButton.hidden = false;
-                startButton.focus();
+                progress.style.strokeDashoffset = '0';
+                if (errors.length) console.warn('Texturas que no se pudieron cargar:', errors);
+                startButton.disabled = false;
+                startButton.removeAttribute('aria-busy');
+                startButton.setAttribute('aria-label', 'Iniciar');
+                loader.classList.add('ready');
+                startButton.focus({ preventScroll: true });
                 if (params.has('autostart')) startButton.click();
             },
         });

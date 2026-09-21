@@ -67,66 +67,72 @@ svg .fill { fill: currentColor; stroke: none; }
 .label--small { font-size: 10.5px; }
 .label.is-hidden { opacity: 0; pointer-events: none; }
 
-/* ---------- Carga ---------- */
+/* ---------- Inicio ---------- */
+/* Deja ver la escena real detrás, con una viñeta que centra la mirada. */
 .loader {
     position: fixed;
     inset: 0;
     z-index: 50;
     display: grid;
     place-items: center;
-    background: radial-gradient(ellipse at 50% 60%, #0d1428 0%, #03050b 55%, #000 100%);
+    background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.55) 60%, rgba(0, 0, 0, 0.9) 100%);
     transition: opacity 1.2s ease;
 }
 .loader.done { opacity: 0; pointer-events: none; }
-.loader__content { text-align: center; padding: 24px; max-width: 520px; }
-.loader__eyebrow { text-transform: uppercase; letter-spacing: 0.35em; font-size: 11px; color: var(--muted); }
+.loader__content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16vh 24px 14vh;
+    text-align: center;
+}
 .loader__title {
     font-family: var(--display);
     font-weight: 300;
-    font-size: clamp(42px, 9vw, 76px);
-    letter-spacing: 0.04em;
-    margin: 10px 0 8px;
-    background: linear-gradient(180deg, #fff 30%, #ffcf87 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-.loader__subtitle { color: var(--muted); font-size: 13px; line-height: 1.6; }
-.loader__bar {
-    margin: 34px auto 12px;
-    width: min(320px, 80vw);
-    height: 2px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 2px;
-    overflow: hidden;
-}
-.loader__progress {
-    height: 100%;
-    width: 0;
-    background: linear-gradient(90deg, #ff9d3c, #ffe3a1);
-    box-shadow: 0 0 12px #ffb35c;
-    transition: width 0.25s ease;
-}
-.loader__status { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
-.loader__start {
-    margin-top: 26px;
-    padding: 13px 34px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 210, 140, 0.45);
-    background: rgba(255, 190, 100, 0.08);
-    color: #ffe2b0;
-    letter-spacing: 0.16em;
+    font-size: clamp(30px, 6vw, 56px);
+    letter-spacing: 0.32em;
+    margin-right: -0.32em; /* compensa el espaciado de la última letra */
     text-transform: uppercase;
-    font-size: 12px;
-    font-weight: 500;
-    animation: breathe 2.6s ease-in-out infinite;
-    transition: background 0.25s, transform 0.25s;
+    color: rgba(255, 255, 255, 0.92);
+    animation: appear 1.6s ease both;
 }
-.loader__start:hover { background: rgba(255, 190, 100, 0.18); transform: translateY(-1px); }
-.loader__error { margin-top: 20px; color: #ff9a8a; font-size: 13px; line-height: 1.6; }
-@keyframes breathe {
+.loader__error { max-width: 420px; color: #ff9a8a; font-size: 13px; line-height: 1.6; }
+
+.start {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.03);
+    transition: color 0.6s, background 0.3s, transform 0.3s;
+    animation: appear 1.6s 0.3s ease both;
+}
+.start__ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.start__track { fill: none; stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; }
+.start__progress {
+    fill: none;
+    stroke: #ffd08a;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    transition: stroke-dashoffset 0.4s ease;
+    filter: drop-shadow(0 0 4px rgba(255, 190, 110, 0.8));
+}
+.start__icon { width: 26px; height: 26px; margin-left: 4px; fill: currentColor; stroke: none; }
+.loader.ready .start { color: #ffe2b0; cursor: pointer; animation: appear 1.6s 0.3s ease both, glow 2.8s 1s ease-in-out infinite; }
+.loader.ready .start:hover { background: rgba(255, 200, 120, 0.1); transform: scale(1.06); }
+.start:disabled { cursor: default; }
+
+@keyframes appear { from { opacity: 0; transform: translateY(10px); } }
+@keyframes glow {
     0%, 100% { box-shadow: 0 0 0 rgba(255, 190, 100, 0); }
-    50% { box-shadow: 0 0 28px rgba(255, 190, 100, 0.35); }
+    50% { box-shadow: 0 0 36px rgba(255, 190, 100, 0.35); }
 }
 
 /* ---------- HUD ---------- */

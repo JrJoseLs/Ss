@@ -61,7 +61,9 @@ export class App {
         this.createRenderer();
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.01, 30000);
-        this.camera.position.set(-1500, 1100, 3400);
+        // Plano inicial: el sistema completo, lejano e inclinado, detrás de la pantalla de inicio.
+        this.camera.position.set(-760, 300, 1500);
+        this.started = false;
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         Object.assign(this.controls, {
@@ -72,6 +74,7 @@ export class App {
             panSpeed: 0.6,
             minDistance: 5,
             maxDistance: 4000,
+            enabled: false, // se activa al empezar
         });
 
         this.assets = new AssetLoader(this.renderer);
@@ -245,6 +248,7 @@ export class App {
 
     /** Arranca la secuencia de entrada: la cámara llega desde el espacio profundo. */
     begin(focusId = '') {
+        this.started = true;
         const target = focusId && this.system.find(focusId);
         if (target) this.select(target);
         else this.director.flyToOverview(7.5);
@@ -296,10 +300,14 @@ export class App {
             camera: this.camera,
         };
         this.system.update(ctx);
+        if (!this.started && !this.reducedMotion) {
+            // En la pantalla de inicio la cámara gira despacio alrededor del Sol.
+            this.camera.position.applyAxisAngle(this.upAxis ??= new THREE.Vector3(0, 1, 0), dt * 0.025);
+        }
         this.director.update(dt);
         this.updateViewOffset(dt);
         this.starfield.update(this.camera, this.elapsed);
-        this.system.updateLabels(this.camera, this.options.labels && !this.ui.immersive, this.selected, window.innerWidth, window.innerHeight, this.ui.isCompact);
+        this.system.updateLabels(this.camera, this.options.labels && !this.ui.immersive && this.started, this.selected, window.innerWidth, window.innerHeight, this.ui.isCompact);
         this.flare.update(this.camera, this.system.sun.radius, this.system.occluders, dt);
         this.cinematic.uniforms.uTime.value = this.elapsed;
         // Bloom adaptativo: si el Sol llena la pantalla, se suaviza para no deslumbrar.

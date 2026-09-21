@@ -26,12 +26,15 @@
     <!-- Pantalla de carga -->
     <section id="loader" class="loader">
         <div class="loader__content">
-            <p class="loader__eyebrow">Simulación interactiva</p>
             <h1 class="loader__title">Sistema Solar</h1>
-            <p class="loader__subtitle">Órbitas keplerianas reales · Texturas de la NASA · Tiempo simulado</p>
-            <div class="loader__bar"><div id="loaderProgress" class="loader__progress"></div></div>
-            <p id="loaderStatus" class="loader__status">Cargando texturas… 0%</p>
-            <button id="startButton" class="loader__start" hidden>Comenzar el viaje</button>
+            <!-- El anillo del botón es la barra de carga; al completarse, el botón se activa. -->
+            <button id="startButton" class="start" aria-label="Cargando…" aria-busy="true" disabled>
+                <svg class="start__ring" viewBox="0 0 100 100" aria-hidden="true">
+                    <circle class="start__track" cx="50" cy="50" r="46"/>
+                    <circle id="loaderProgress" class="start__progress" cx="50" cy="50" r="46" pathLength="100"/>
+                </svg>
+                <svg class="start__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+            </button>
             <p id="loaderError" class="loader__error" hidden></p>
         </div>
     </section>
@@ -199,7 +202,7 @@
     <script>
         // Los módulos ES no se pueden cargar abriendo el archivo con doble clic.
         if (location.protocol === 'file:') {
-            document.getElementById('loaderStatus').hidden = true;
+            document.getElementById('startButton').hidden = true;
             const error = document.getElementById('loaderError');
             error.hidden = false;
             error.innerHTML = 'Abre el proyecto desde un servidor web.<br>Por ejemplo: <code>python -m http.server</code> y visita <code>http://localhost:8000</code>';
